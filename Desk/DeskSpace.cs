@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Text;
 
 namespace DeskSpace
 {
@@ -34,6 +35,11 @@ namespace DeskSpace
 		public static bool CheckSame(Desk argDesk1, Desk argDesk2)
 		{
 			return DeskCard.CheckSame(argDesk1.AllCardOnDesk, argDesk2.AllCardOnDesk);
+		}
+
+		public string Pretty()
+		{
+			return AllCardOnDesk.Pretty();
 		}
 	}
 
@@ -80,6 +86,54 @@ namespace DeskSpace
 				}
 			}
 			return true;
+		}
+
+		public string Pretty()
+		{
+			StringBuilder sb = new StringBuilder();
+
+			foreach (Card card in SortedCard)
+			{
+				sb.Append(card == null ? "   " : card.Pretty());
+				sb.Append("  |  ");
+			}
+			sb.Append("\b\b\b\b\b ||| ");
+			foreach (Card card in FreeCard)
+			{
+				sb.Append(card == null ? "   " : card.Pretty());
+				sb.Append("  |  ");
+			}
+			sb.Append("\b\b\b\b\b     ");
+			sb.Append(Environment.NewLine);
+			sb.Append("--- --- --- --- --- --- --- --- --- --- --- --- --- --- ---");
+			sb.Append(Environment.NewLine);
+
+			for (int rowIndex = 0; rowIndex < ColoumCard.GetLength(1); rowIndex++)
+			{
+				bool IsCardInRow = false;
+				for (int coloumIndex = 0; coloumIndex < ColoumCard.GetLength(0); coloumIndex++)
+				{
+					if (ColoumCard[coloumIndex, rowIndex] == null)
+					{
+						sb.Append("   ");
+					}
+					else
+					{
+						sb.Append(ColoumCard[coloumIndex, rowIndex].Pretty());
+						IsCardInRow = true;
+					}
+					sb.Append("  |  ");
+				}
+				sb.Append("\b\b\b\b\b     ");
+				sb.Append(Environment.NewLine);
+				if (!IsCardInRow)
+				{
+					break;
+				}
+			}
+
+
+			return sb.ToString();
 		}
 	}
 
@@ -192,6 +246,68 @@ namespace DeskSpace
 				return false;
 			}
 			return (argCard1.CardType == argCard2.CardType || argCard1.CardNumber == argCard2.CardNumber);
+		}
+
+		public string Pretty()
+		{
+			StringBuilder sb = new StringBuilder();
+			if (CardType == Type.Club)
+			{
+				sb.Append("C");
+			}
+			else if (CardType == Type.Diamonds)
+			{
+				sb.Append("D");
+			}
+			else if (CardType == Type.Heart)
+			{
+				sb.Append("H");
+			}
+			else if (CardType == Type.Spade)
+			{
+				sb.Append("S");
+			}
+			else if (CardType == Type.Unknown)
+			{
+				sb.Append("U");
+			}
+			else
+			{
+				throw new NotImplementedException();
+			}
+
+			if (CardNumber >= Number.Arch && CardNumber <=Number.Nine)
+			{
+				sb.Append((int)CardNumber);
+				sb.Append(" ");
+			}
+			else if (CardNumber == Number.Ten)
+			{
+				sb.Append((int)CardNumber);
+			}
+			else if (CardNumber == Number.Jack)
+			{
+				sb.Append("11");
+			}
+			else if (CardNumber == Number.Queen)
+			{
+				sb.Append("12");
+			}
+			else if (CardNumber == Number.King)
+			{
+				sb.Append("13");
+			}
+			else if (CardNumber == Number.Unknown)
+			{
+				sb.Append("U");
+				sb.Append(" ");
+			}
+			else
+			{
+				throw new NotImplementedException();
+			}
+
+			return sb.ToString();
 		}
 	}
 }

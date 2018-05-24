@@ -13,7 +13,6 @@ namespace FreeCellSolver
 		static void Main(string[] args)
 		{
 
-			
 
 			Console.ReadKey();
 		}
