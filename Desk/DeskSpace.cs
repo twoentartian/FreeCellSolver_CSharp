@@ -63,28 +63,63 @@ namespace DeskSpace
 		{
 			for (int i = 0; i < argDeskCard1.FreeCard.Length; i++)
 			{
-				if(!Card.CheckSame(argDeskCard1.FreeCard[i], argDeskCard2.FreeCard[i]))
+				bool isSame = false;
+				for (int j = 0; j < argDeskCard2.FreeCard.Length; j++)
 				{
-					return false;
-				}
-			}
-			for (int i = 0; i < argDeskCard1.SortedCard.Length; i++)
-			{
-				if (!Card.CheckSame(argDeskCard1.SortedCard[i], argDeskCard2.SortedCard[i]))
-				{
-					return false;
-				}
-			}
-			for (int x = 0; x < argDeskCard1.ColoumCard.GetLength(0); x++)
-			{
-				for (int y = 0; y < argDeskCard1.ColoumCard.GetLength(1); y++)
-				{
-					if (!Card.CheckSame(argDeskCard1.ColoumCard[x, y], argDeskCard2.ColoumCard[x, y]))
+					if (Card.CheckSame(argDeskCard1.FreeCard[i], argDeskCard2.FreeCard[j]))
 					{
-						return false;
+						isSame = true;
+						break;
 					}
 				}
+				if (!isSame)
+				{
+					return false;
+				}
 			}
+
+			for (int i = 0; i < argDeskCard1.SortedCard.Length; i++)
+			{
+				bool isSame = false;
+				for (int j = 0; j < argDeskCard2.SortedCard.Length; j++)
+				{
+					if (Card.CheckSame(argDeskCard1.SortedCard[i], argDeskCard2.SortedCard[j]))
+					{
+						isSame = true;
+						break;
+					}
+				}
+				if (!isSame)
+				{
+					return false;
+				}
+			}
+
+			for (int i = 0; i < argDeskCard1.ColoumCard.GetLength(0); i++)
+			{
+				bool isSame = false;
+				for (int j = 0; j < argDeskCard2.ColoumCard.GetLength(0); j++)
+				{
+					bool IsColoumSame = true;
+					for (int y = 0; y < argDeskCard1.ColoumCard.GetLength(1); y++)
+					{
+						if (!Card.CheckSame(argDeskCard1.ColoumCard[i, y], argDeskCard2.ColoumCard[j, y]))
+						{
+							IsColoumSame = false;
+							break;
+						}
+					}
+					if (IsColoumSame)
+					{
+						isSame = true;
+					}
+				}
+				if (!isSame)
+				{
+					return false;
+				}
+			}
+
 			return true;
 		}
 

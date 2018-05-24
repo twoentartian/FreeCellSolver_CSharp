@@ -95,5 +95,35 @@ namespace UnitTestJson
 			
 
 		}
+
+		[TestMethod]
+		public void TestDeskSame()
+		{
+			Desk tempDesk1 = new Desk();
+			tempDesk1.AllCardOnDesk.FreeCard[0] = new Card(Card.Type.Heart, Card.Number.Arch);
+			tempDesk1.AllCardOnDesk.SortedCard[0] = new Card(Card.Type.Heart, Card.Number.Two);
+			tempDesk1.AllCardOnDesk.ColoumCard[0, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk1.AllCardOnDesk.ColoumCard[0, 1] = new Card(Card.Type.Heart, Card.Number.Four);
+
+			Desk tempDesk2 = new Desk();
+			tempDesk2.AllCardOnDesk.FreeCard[1] = new Card(Card.Type.Heart, Card.Number.Arch);
+			tempDesk2.AllCardOnDesk.SortedCard[1] = new Card(Card.Type.Heart, Card.Number.Two);
+			tempDesk2.AllCardOnDesk.ColoumCard[1, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk2.AllCardOnDesk.ColoumCard[1, 1] = new Card(Card.Type.Heart, Card.Number.Four);
+	
+			bool result = Desk.CheckSame(tempDesk1, tempDesk2);
+			if (!result)
+			{
+				throw new Exception("Test for check desk same failed");
+			}
+
+			tempDesk2.AllCardOnDesk.ColoumCard[1, 2] = new Card(Card.Type.Heart, Card.Number.Four);
+
+			result = Desk.CheckSame(tempDesk1, tempDesk2);
+			if (result)
+			{
+				throw new Exception("Test for check desk same failed");
+			}
+		}
 	}
 }
