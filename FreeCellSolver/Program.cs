@@ -12,9 +12,17 @@ namespace FreeCellSolver
 	{
 		static void Main(string[] args)
 		{
-
-
-			Console.ReadKey();
+			CommandManager.GetInstance().ExecuteCommand("h");
+			while (true)
+			{
+				Console.Write("Enter New Command:");
+				string userInput = Console.ReadLine();
+				Console.WriteLine();
+				if (!string.IsNullOrWhiteSpace(userInput))
+				{
+					CommandManager.GetInstance().ExecuteCommand(userInput);
+				}
+			}
 		}
 	}
 }
