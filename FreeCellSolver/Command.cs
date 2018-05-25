@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using DeskSpace;
 
 namespace FreeCellSolver
 {
@@ -171,6 +172,64 @@ namespace FreeCellSolver
 
 	#endregion
 
+	#region Solve Desk Command
+
+	class CommandSolveDesk : Command
+	{
+		#region Singleton
+
+		private static CommandSolveDesk _instance;
+
+		private CommandSolveDesk()
+		{
+
+		}
+
+		public static CommandSolveDesk GetInstance()
+		{
+			return _instance ?? (_instance = new CommandSolveDesk());
+		}
+
+		#endregion
+
+		public override string GetHelp()
+		{
+			return "Solve a desk from a json file.";
+		}
+
+		public override string GetName()
+		{
+			return "solve desk";
+		}
+
+		public override string GetCommand()
+		{
+			return "sd";
+		}
+
+		public override void Execute()
+		{
+			string location = CommandManager.GetInstance().RemainCommand.Trim();
+			string json;
+			try
+			{
+				json = File.ReadAllText(location);
+			}
+			catch (FileNotFoundException e)
+			{
+				Console.WriteLine("File not found");
+				return;
+			}
+
+			Desk targetDesk = Desk.GetDeskFromJson(json);
+			Console.WriteLine(targetDesk.Pretty());
+
+			// TODO Add solve desk
+		}
+	}
+
+	#endregion
+
 	class CommandManager
 	{
 		#region Singleton
@@ -189,10 +248,13 @@ namespace FreeCellSolver
 
 		#endregion
 
+		public string RemainCommand;
+
 		private void InitDictionary()
 		{
 			CommandSet.Add(CommandPrintHelp.GetInstance().GetCommand(), CommandPrintHelp.GetInstance());
 			CommandSet.Add(CommandGenerateSample.GetInstance().GetCommand(),CommandGenerateSample.GetInstance());
+			CommandSet.Add(CommandSolveDesk.GetInstance().GetCommand(), CommandSolveDesk.GetInstance());
 			CommandSet.Add(CommandQuit.GetInstance().GetCommand(), CommandQuit.GetInstance());
 		}
 
@@ -200,9 +262,11 @@ namespace FreeCellSolver
 
 		public void ExecuteCommand(string command)
 		{
+			string[] items = command.Split(' ');
+			RemainCommand = command.Remove(0, items[0].Length);
 			try
 			{
-				CommandSet[command].Execute();
+				CommandSet[items[0]].Execute();
 			}
 			catch (KeyNotFoundException e)
 			{
