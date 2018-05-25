@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Linq;
 using System.Text;
 
 namespace DeskSpace
@@ -56,6 +57,29 @@ namespace DeskSpace
 		public Card[] SortedCard = new Card[4];
 
 		public Card[,] ColoumCard = new Card[8, 26];
+
+		public int GetEmptyLocationOnFreeCard()
+		{
+			return FreeCard.Count(t => t == null);
+		}
+
+		public int GetEmptyLocationOnColoumCard()
+		{
+			int output = 0;
+			for (int i = 0; i < ColoumCard.GetLength(0); i++)
+			{
+				if (ColoumCard[i,0] == null)
+				{
+					output++;
+				}
+			}
+			return output;
+		}
+
+		public int GetMaximumMovementNumber()
+		{
+			return (GetEmptyLocationOnColoumCard() + 1) * (GetEmptyLocationOnFreeCard() + 1);
+		}
 
 		public bool CheckSame(DeskCard argDeskCard) => CheckSame(this, argDeskCard);
 
@@ -187,6 +211,8 @@ namespace DeskSpace
 			CardType = argType;
 		}
 
+		#region Property
+
 		public enum Color
 		{
 			Unknown,
@@ -267,6 +293,8 @@ namespace DeskSpace
 			get => _cardNumber;
 			set => _cardNumber = value;
 		}
+
+		#endregion
 
 		public bool CheckSame(Card argCard) => CheckSame(this, argCard);
 

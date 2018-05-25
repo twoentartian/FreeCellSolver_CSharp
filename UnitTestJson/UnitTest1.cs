@@ -107,9 +107,9 @@ namespace UnitTestJson
 
 			Desk tempDesk2 = new Desk();
 			tempDesk2.AllCardOnDesk.FreeCard[1] = new Card(Card.Type.Heart, Card.Number.Arch);
-			tempDesk2.AllCardOnDesk.SortedCard[1] = new Card(Card.Type.Heart, Card.Number.Two);
-			tempDesk2.AllCardOnDesk.ColoumCard[1, 0] = new Card(Card.Type.Heart, Card.Number.Three);
-			tempDesk2.AllCardOnDesk.ColoumCard[1, 1] = new Card(Card.Type.Heart, Card.Number.Four);
+			tempDesk2.AllCardOnDesk.SortedCard[2] = new Card(Card.Type.Heart, Card.Number.Two);
+			tempDesk2.AllCardOnDesk.ColoumCard[3, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk2.AllCardOnDesk.ColoumCard[3, 1] = new Card(Card.Type.Heart, Card.Number.Four);
 	
 			bool result = Desk.CheckSame(tempDesk1, tempDesk2);
 			if (!result)
@@ -117,13 +117,57 @@ namespace UnitTestJson
 				throw new Exception("Test for check desk same failed");
 			}
 
-			tempDesk2.AllCardOnDesk.ColoumCard[1, 2] = new Card(Card.Type.Heart, Card.Number.Four);
+			tempDesk2.AllCardOnDesk.ColoumCard[3, 2] = new Card(Card.Type.Heart, Card.Number.Four);
 
 			result = Desk.CheckSame(tempDesk1, tempDesk2);
 			if (result)
 			{
 				throw new Exception("Test for check desk same failed");
 			}
+		}
+
+		[TestMethod]
+		public void TestMaximumMoveCardNumber()
+		{
+			Desk tempDesk1 = new Desk();
+			tempDesk1.AllCardOnDesk.FreeCard[0] = new Card(Card.Type.Heart, Card.Number.Arch);
+			tempDesk1.AllCardOnDesk.ColoumCard[0, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk1.AllCardOnDesk.ColoumCard[0, 1] = new Card(Card.Type.Heart, Card.Number.Four);
+
+			int maximumMovement = tempDesk1.AllCardOnDesk.GetMaximumMovementNumber();
+
+			if (maximumMovement != 4*8)
+			{
+				throw new Exception("Test for calculating the maximum card movement in a single move failed");
+			}
+
+			tempDesk1.AllCardOnDesk.FreeCard[1] = new Card(Card.Type.Heart, Card.Number.Arch);
+			tempDesk1.AllCardOnDesk.ColoumCard[1, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk1.AllCardOnDesk.ColoumCard[1, 1] = new Card(Card.Type.Heart, Card.Number.Four);
+
+			maximumMovement = tempDesk1.AllCardOnDesk.GetMaximumMovementNumber();
+
+			if (maximumMovement != 3 * 7)
+			{
+				throw new Exception("Test for calculating the maximum card movement in a single move failed");
+			}
+
+			tempDesk1.AllCardOnDesk.FreeCard[2] = new Card(Card.Type.Heart, Card.Number.Arch);
+			tempDesk1.AllCardOnDesk.FreeCard[3] = new Card(Card.Type.Heart, Card.Number.Arch);
+			tempDesk1.AllCardOnDesk.ColoumCard[2, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk1.AllCardOnDesk.ColoumCard[3, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk1.AllCardOnDesk.ColoumCard[4, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk1.AllCardOnDesk.ColoumCard[5, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk1.AllCardOnDesk.ColoumCard[6, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+			tempDesk1.AllCardOnDesk.ColoumCard[7, 0] = new Card(Card.Type.Heart, Card.Number.Three);
+
+			maximumMovement = tempDesk1.AllCardOnDesk.GetMaximumMovementNumber();
+
+			if (maximumMovement != 1 * 1)
+			{
+				throw new Exception("Test for calculating the maximum card movement in a single move failed");
+			}
+
 		}
 	}
 }
