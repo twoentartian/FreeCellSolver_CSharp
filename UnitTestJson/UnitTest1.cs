@@ -169,5 +169,34 @@ namespace UnitTestJson
 			}
 
 		}
+
+		[TestMethod]
+		public void TestAddOrRemoveCard()
+		{
+			Desk tempDesk1 = new Desk();
+			Card tempCard = new Card(Card.Type.Diamonds, Card.Number.Arch);
+			tempDesk1.AddNewCardInColoum(0, tempCard);
+
+			if (tempDesk1.AllCardCount != 1)
+			{
+				throw new Exception("Test failed");
+			}
+
+			Card card = tempDesk1.RemoveCardInColoum(0);
+
+			try
+			{
+				tempDesk1.RemoveCardInColoum(0);
+				throw new Exception("Test Failed");
+			}
+			catch (NotEnoughCardException e)
+			{
+
+			}
+			if (card.GetHashCode() != tempCard.GetHashCode())
+			{
+				throw new Exception("Test failed");
+			}
+		}
 	}
 }

@@ -5,7 +5,10 @@ using System.Text;
 
 namespace DeskSpace
 {
-	[Serializable]
+	public class NotEnoughCardException : Exception
+	{
+		
+	}
 	public class Desk
 	{
 		public Desk()
@@ -13,11 +16,22 @@ namespace DeskSpace
 			
 		}
 
+		#region Property
+
 		public DeskCard AllCardOnDesk = new DeskCard();
+
+		private int[] ColoumCardCounter = new int[8];
+
+		private int _allCardCount;
+		public int AllCardCount => _allCardCount;
+
+
+
+		#endregion
 
 		public string GetJson()
 		{
-			return JsonConvert.SerializeObject(this, Formatting.Indented);
+			return JsonConvert.SerializeObject(AllCardOnDesk, Formatting.Indented);
 		}
 
 		public static Desk GetDeskFromJson(string json)
@@ -27,7 +41,8 @@ namespace DeskSpace
 				CheckAdditionalContent = true,
 				MissingMemberHandling = MissingMemberHandling.Error
 			};
-			Desk outputDesk = JsonConvert.DeserializeObject<Desk>(json, jsonSetting);
+			DeskCard outputDeskCard = JsonConvert.DeserializeObject<DeskCard>(json, jsonSetting);
+			Desk outputDesk = new Desk {AllCardOnDesk = outputDeskCard};
 			return outputDesk;
 		}
 
@@ -42,6 +57,48 @@ namespace DeskSpace
 		{
 			return AllCardOnDesk.Pretty();
 		}
+
+		public void AddNewCardInColoum(int coloum, Card.Type type, int numberInt)
+		{
+			Card.Number number = (Card.Number)numberInt;
+			AddNewCardInColoum(coloum, type, number);
+		}
+
+		public void AddNewCardInColoum(int coloum, Card.Type type, Card.Number number)
+		{
+			AllCardOnDesk.ColoumCard[coloum, ColoumCardCounter[coloum]] = new Card(type, number);
+			ColoumCardCounter[coloum]++;
+			_allCardCount++;
+		}
+
+		public void AddNewCardInColoum(int coloum, Card card)
+		{
+			AllCardOnDesk.ColoumCard[coloum, ColoumCardCounter[coloum]] = card;
+			ColoumCardCounter[coloum]++;
+			_allCardCount++;
+		}
+
+		public Card RemoveCardInColoum(int coloum)
+		{
+			Card outputCard;
+			if (ColoumCardCounter[coloum] > 0)
+			{
+				ColoumCardCounter[coloum]--;
+				outputCard = AllCardOnDesk.ColoumCard[coloum, ColoumCardCounter[ColoumCardCounter[coloum]]];
+				AllCardOnDesk.ColoumCard[coloum, ColoumCardCounter[ColoumCardCounter[coloum]]] = null;
+				_allCardCount--;
+			}
+			else
+			{
+				throw new NotEnoughCardException();
+			}
+			return outputCard;
+		}
+
+		public void CalculateParameters()
+		{
+			
+		}
 	}
 
 	[Serializable]
@@ -52,11 +109,15 @@ namespace DeskSpace
 
 		}
 
+		#region Property
+
 		public Card[] FreeCard = new Card[4];
 
 		public Card[] SortedCard = new Card[4];
 
 		public Card[,] ColoumCard = new Card[8, 26];
+
+		#endregion
 
 		public int GetEmptyLocationOnFreeCard()
 		{
@@ -79,6 +140,11 @@ namespace DeskSpace
 		public int GetMaximumMovementNumber()
 		{
 			return (GetEmptyLocationOnColoumCard() + 1) * (GetEmptyLocationOnFreeCard() + 1);
+		}
+
+		public int CheckSortedInColoum(int coloum)
+		{
+			return 0;
 		}
 
 		public bool CheckSame(DeskCard argDeskCard) => CheckSame(this, argDeskCard);

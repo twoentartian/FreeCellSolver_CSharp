@@ -32,7 +32,6 @@ namespace FreeCellSolver
 		}
 	}
 
-
 	#region HelpCommand
 
 	class CommandPrintHelp : Command
