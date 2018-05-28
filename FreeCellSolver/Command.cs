@@ -214,7 +214,7 @@ namespace FreeCellSolver
 			{
 				json = File.ReadAllText(location);
 			}
-			catch (FileNotFoundException e)
+			catch (FileNotFoundException)
 			{
 				Console.WriteLine("File not found");
 				return;
@@ -223,7 +223,82 @@ namespace FreeCellSolver
 			Desk targetDesk = Desk.GetDeskFromJson(json);
 			Console.WriteLine(targetDesk.Pretty());
 
+			try
+			{
+				targetDesk.CheckError();
+			}
+			catch (ErrorInDeskException e)
+			{
+				Console.WriteLine($"Error: {e}");
+				return;
+			}
+
 			// TODO Add solve desk
+		}
+	}
+
+	#endregion
+
+	#region Check Json Command
+
+	class CommandCheckJson : Command
+	{
+		#region Singleton
+
+		private static CommandCheckJson _instance;
+
+		private CommandCheckJson()
+		{
+
+		}
+
+		public static CommandCheckJson GetInstance()
+		{
+			return _instance ?? (_instance = new CommandCheckJson());
+		}
+
+		#endregion
+
+		public override string GetHelp()
+		{
+			return "Check the json file is correctly recording a desk.";
+		}
+
+		public override string GetName()
+		{
+			return "check json";
+		}
+
+		public override string GetCommand()
+		{
+			return "cj";
+		}
+
+		public override void Execute()
+		{
+			string location = CommandManager.GetInstance().RemainCommand.Trim();
+			string json;
+			try
+			{
+				json = File.ReadAllText(location);
+			}
+			catch (FileNotFoundException)
+			{
+				Console.WriteLine("File not found");
+				return;
+			}
+
+			Desk targetDesk = Desk.GetDeskFromJson(json);
+			Console.WriteLine(targetDesk.Pretty());
+			try
+			{
+				targetDesk.CheckError();
+				Console.WriteLine("No error");
+			}
+			catch (ErrorInDeskException e)
+			{
+				Console.WriteLine(e);
+			}
 		}
 	}
 
@@ -253,6 +328,7 @@ namespace FreeCellSolver
 		{
 			CommandSet.Add(CommandPrintHelp.GetInstance().GetCommand(), CommandPrintHelp.GetInstance());
 			CommandSet.Add(CommandGenerateSample.GetInstance().GetCommand(),CommandGenerateSample.GetInstance());
+			CommandSet.Add(CommandCheckJson.GetInstance().GetCommand(), CommandCheckJson.GetInstance());
 			CommandSet.Add(CommandSolveDesk.GetInstance().GetCommand(), CommandSolveDesk.GetInstance());
 			CommandSet.Add(CommandQuit.GetInstance().GetCommand(), CommandQuit.GetInstance());
 		}
@@ -267,7 +343,7 @@ namespace FreeCellSolver
 			{
 				CommandSet[items[0]].Execute();
 			}
-			catch (KeyNotFoundException e)
+			catch (KeyNotFoundException)
 			{
 				Console.WriteLine("No such command");
 				GetInstance().ExecuteCommand("h");

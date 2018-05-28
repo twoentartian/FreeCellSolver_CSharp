@@ -16,7 +16,6 @@ namespace UnitTestJson
 			tempDesk.AllCardOnDesk.ColoumCard[0, 0] = new Card(Card.Type.Heart, Card.Number.Arch);
 			string json = tempDesk.GetJson();
 			Desk deserizlizedDeskJson = Desk.GetDeskFromJson(json);
-
 			bool result = tempDesk.CheckSame(deserizlizedDeskJson);
 
 			if (!result)
@@ -189,7 +188,7 @@ namespace UnitTestJson
 				tempDesk1.RemoveCardInColoum(0);
 				throw new Exception("Test Failed");
 			}
-			catch (NotEnoughCardException e)
+			catch (NotEnoughCardException)
 			{
 
 			}
@@ -197,6 +196,61 @@ namespace UnitTestJson
 			{
 				throw new Exception("Test failed");
 			}
+		}
+
+		[TestMethod]
+		public void TestDeskCheckError()
+		{
+			Desk tempDesk1 = new Desk();
+			int coloum = 0, row = 0;
+			for (Card.Type type = Card.Type.Diamonds; type <= Card.Type.Club; type++)
+			{
+				for (int i = 1; i <= 13; i++)
+				{
+					tempDesk1.AddNewCardInColoum(coloum, new Card(type, (Card.Number) i));
+					coloum++;
+					if (coloum == tempDesk1.AllCardOnDesk.ColoumCard.GetLength(0))
+					{
+						row++;
+						coloum = 0;
+					}
+				}
+			}
+			tempDesk1.CheckError();
+
+			Card tempCard = tempDesk1.RemoveCardInColoum(0);
+			try
+			{
+				tempDesk1.CheckError();
+				throw new Exception("Test failed");
+			}
+			catch (ErrorInDeskException)
+			{
+
+			}
+			tempDesk1.AllCardOnDesk.FreeCard[0] = tempCard;
+			tempDesk1.CheckError();
+
+			Desk tempDesk2 = new Desk();
+			for (Card.Type type = Card.Type.Diamonds; type <= Card.Type.Spade; type++)
+			{
+				for (int i = 1; i <= 13; i++)
+				{
+					tempDesk2.AddNewCardInColoum(coloum, new Card(type, (Card.Number)i));
+					coloum++;
+					if (coloum == tempDesk2.AllCardOnDesk.ColoumCard.GetLength(0))
+					{
+						row++;
+						coloum = 0;
+					}
+				}
+			}
+			for (Card.Number i = Card.Number.Arch; i <= Card.Number.King; i++)
+			{
+				tempDesk2.AddNewCardInSortedCard(new Card(Card.Type.Club, i));
+			}
+
+			tempDesk2.CheckError();
 		}
 	}
 }

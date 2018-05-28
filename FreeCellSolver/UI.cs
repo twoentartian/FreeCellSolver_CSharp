@@ -33,7 +33,7 @@ namespace FreeCellSolver
 			{
 				for (int i = 1; i <= 13; i++)
 				{
-					sampleDesk.AllCardOnDesk.ColoumCard[coloum, row] = new Card(type, (Card.Number)i);
+					sampleDesk.AddNewCardInColoum(coloum, new Card(type, (Card.Number)i));
 					coloum++;
 					if (coloum == sampleDesk.AllCardOnDesk.ColoumCard.GetLength(0))
 					{

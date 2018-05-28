@@ -7,7 +7,18 @@ namespace DeskSpace
 {
 	public class NotEnoughCardException : Exception
 	{
-		
+		public NotEnoughCardException(string info) : base(info)
+		{
+				
+		}
+	}
+
+	public class ErrorInDeskException : Exception
+	{
+		public ErrorInDeskException(string info) : base(info)
+		{
+			
+		}
 	}
 	public class Desk
 	{
@@ -20,7 +31,7 @@ namespace DeskSpace
 
 		public DeskCard AllCardOnDesk = new DeskCard();
 
-		private int[] ColoumCardCounter = new int[8];
+		private readonly int[] _coloumCardCounter = new int[8];
 
 		private int _allCardCount;
 		public int AllCardCount => _allCardCount;
@@ -43,6 +54,7 @@ namespace DeskSpace
 			};
 			DeskCard outputDeskCard = JsonConvert.DeserializeObject<DeskCard>(json, jsonSetting);
 			Desk outputDesk = new Desk {AllCardOnDesk = outputDeskCard};
+			outputDesk.CalculateParameters();
 			return outputDesk;
 		}
 
@@ -58,6 +70,9 @@ namespace DeskSpace
 			return AllCardOnDesk.Pretty();
 		}
 
+
+		#region Coloum operation
+
 		public void AddNewCardInColoum(int coloum, Card.Type type, int numberInt)
 		{
 			Card.Number number = (Card.Number)numberInt;
@@ -66,38 +81,176 @@ namespace DeskSpace
 
 		public void AddNewCardInColoum(int coloum, Card.Type type, Card.Number number)
 		{
-			AllCardOnDesk.ColoumCard[coloum, ColoumCardCounter[coloum]] = new Card(type, number);
-			ColoumCardCounter[coloum]++;
+			AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum]] = new Card(type, number);
+			_coloumCardCounter[coloum]++;
 			_allCardCount++;
 		}
 
 		public void AddNewCardInColoum(int coloum, Card card)
 		{
-			AllCardOnDesk.ColoumCard[coloum, ColoumCardCounter[coloum]] = card;
-			ColoumCardCounter[coloum]++;
+			AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum]] = card;
+			_coloumCardCounter[coloum]++;
 			_allCardCount++;
 		}
 
 		public Card RemoveCardInColoum(int coloum)
 		{
 			Card outputCard;
-			if (ColoumCardCounter[coloum] > 0)
+			if (_coloumCardCounter[coloum] > 0)
 			{
-				ColoumCardCounter[coloum]--;
-				outputCard = AllCardOnDesk.ColoumCard[coloum, ColoumCardCounter[ColoumCardCounter[coloum]]];
-				AllCardOnDesk.ColoumCard[coloum, ColoumCardCounter[ColoumCardCounter[coloum]]] = null;
+				_coloumCardCounter[coloum]--;
+				outputCard = AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[_coloumCardCounter[coloum]]];
+				AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[_coloumCardCounter[coloum]]] = null;
 				_allCardCount--;
 			}
 			else
 			{
-				throw new NotEnoughCardException();
+				throw new NotEnoughCardException("Not enought space in coloum, try increase the coloum size in source.");
 			}
 			return outputCard;
 		}
 
-		public void CalculateParameters()
+		#endregion
+
+		#region Sorted card operation
+
+		/// <summary>
+		/// Move a card to sorted card, return false if this card violate game rule.
+		/// </summary>
+		/// <param name="card"></param>
+		/// <returns></returns>
+		public bool AddNewCardInSortedCard(Card card)
 		{
-			
+			if (card.CardNumber == Card.Number.Arch)
+			{
+				AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+				return true;
+			}
+			else if (AllCardOnDesk.SortedCard[(int)card.CardType - 1].CardNumber == card.CardNumber-1)
+			{
+				AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+				return true;
+			}
+			return false;
+		}
+
+		#endregion
+
+		#region Free card operation
+
+		private int _freeCardCounter = 0;
+
+		public bool AddNewCardInFreeCard(Card card)
+		{
+			for (int i = 0; i < AllCardOnDesk.FreeCard.Length; i++)
+			{
+				if (AllCardOnDesk.FreeCard[i] == null)
+				{
+					AllCardOnDesk.FreeCard[i] = card;
+					_freeCardCounter++;
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public Card GetCardInfo(int loc)
+		{
+			return AllCardOnDesk.FreeCard[loc];
+		}
+
+		public Card RemoveCardInFreeCard(int loc)
+		{
+			Card output = AllCardOnDesk.FreeCard[loc];
+			AllCardOnDesk.FreeCard[loc] = null;
+			return output;
+		}
+
+		#endregion
+
+		private void CalculateParameters()
+		{
+			for (int coloumIndex = 0; coloumIndex < AllCardOnDesk.ColoumCard.GetLength(0); coloumIndex++)
+			{
+				for (int i = 0; i < AllCardOnDesk.ColoumCard.GetLength(1); i++)
+				{
+					if (AllCardOnDesk.ColoumCard[coloumIndex,i] != null)
+					{
+						_coloumCardCounter[coloumIndex]++;
+					}
+				}
+			}
+
+			for (int i = 0; i < AllCardOnDesk.FreeCard.Length; i++)
+			{
+				if (AllCardOnDesk.FreeCard[i] != null)
+				{
+					_freeCardCounter++;
+				}
+			}
+		}
+
+		/// <summary>
+		/// If the desk from json file does not match game rule (for example, two club 10), the function throws exceptions.
+		/// </summary>
+		public void CheckError()
+		{
+			bool[] isAppear = new bool[13 * 4];
+			foreach (Card t in AllCardOnDesk.SortedCard)
+			{
+				if (t != null)
+				{
+					for (int j = (int)(t.CardType - 1) * 13; j <= (int)t.CardNumber - 1 + (int)(t.CardType - 1) * 13; j++)
+					{
+						isAppear[j] = true;
+					}
+				}
+			}
+
+			foreach (Card t in AllCardOnDesk.FreeCard)
+			{
+				if (t != null)
+				{
+					int index = t.GetId();
+					if (!isAppear[index])
+					{
+						// Card has not appear
+						isAppear[index] = true;
+					}
+					else
+					{
+						throw new ErrorInDeskException($"Error in free card: {t.Pretty()}");
+					}
+				}
+			}
+
+			for (int coloumIndex = 0; coloumIndex < AllCardOnDesk.ColoumCard.GetLength(0); coloumIndex++)
+			{
+				for (int i = 0; i < AllCardOnDesk.ColoumCard.GetLength(1); i++)
+				{
+					if (AllCardOnDesk.ColoumCard[coloumIndex, i] != null)
+					{
+						int index = AllCardOnDesk.ColoumCard[coloumIndex, i].GetId();
+						if (!isAppear[index])
+						{
+							// Card has not appear
+							isAppear[index] = true;
+						}
+						else
+						{
+							throw new ErrorInDeskException($"Error in coloum card: coloum-{coloumIndex + 1} index-{i + 1}");
+						}
+					}
+				}
+			}
+
+			foreach (bool t in isAppear)
+			{
+				if (!t)
+				{
+					throw new ErrorInDeskException("No all card appear in desk");
+				}
+			}
 		}
 	}
 
@@ -288,10 +441,9 @@ namespace DeskSpace
 
 		private Color _cardColor;
 
-		public Color CardColor
+		public Color CardColor()
 		{
-			get => _cardColor;
-			set => _cardColor = value;
+			return _cardColor;
 		}
 
 		/// <summary>
@@ -300,11 +452,11 @@ namespace DeskSpace
 		/// </summary>
 		public enum Type
 		{
-			Unknown,
-			Diamonds,
-			Heart,
-			Spade,
-			Club
+			Unknown = 0,
+			Diamonds = 1,
+			Heart = 2,
+			Spade = 3,
+			Club = 4
 		}
 
 		private Type _cardType;
@@ -437,6 +589,11 @@ namespace DeskSpace
 			}
 
 			return sb.ToString();
+		}
+
+		public int GetId()
+		{
+			return (int)CardNumber - 1 + 13 * ((int) CardType - 1);
 		}
 	}
 }
