@@ -1,6 +1,9 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace DeskSpace
@@ -20,11 +23,24 @@ namespace DeskSpace
 			
 		}
 	}
+
+	[Serializable]
 	public class Desk
 	{
 		public Desk()
 		{
 			
+		}
+
+		public Desk DeepClone()
+		{
+			using (Stream objectStream = new MemoryStream())
+			{
+				IFormatter formatter = new BinaryFormatter();
+				formatter.Serialize(objectStream, this);
+				objectStream.Seek(0, SeekOrigin.Begin);
+				return formatter.Deserialize(objectStream) as Desk;
+			}
 		}
 
 		#region Property
@@ -35,8 +51,6 @@ namespace DeskSpace
 
 		private int _allCardCount;
 		public int AllCardCount => _allCardCount;
-
-
 
 		#endregion
 
@@ -70,6 +84,10 @@ namespace DeskSpace
 			return AllCardOnDesk.Pretty();
 		}
 
+		public float CalculateWinPercent()
+		{
+			return 1 - (float)_allCardCount / (4 * 13);
+		}
 
 		#region Coloum operation
 
@@ -99,8 +117,8 @@ namespace DeskSpace
 			if (_coloumCardCounter[coloum] > 0)
 			{
 				_coloumCardCounter[coloum]--;
-				outputCard = AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[_coloumCardCounter[coloum]]];
-				AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[_coloumCardCounter[coloum]]] = null;
+				outputCard = AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum]];
+				AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum]] = null;
 				_allCardCount--;
 			}
 			else
@@ -108,6 +126,15 @@ namespace DeskSpace
 				throw new NotEnoughCardException("Not enought space in coloum, try increase the coloum size in source.");
 			}
 			return outputCard;
+		}
+
+		public Card GetTheLastCardInfoInColoum(int coloum)
+		{
+			if (_coloumCardCounter[coloum]==0)
+			{
+				return null;
+			}
+			return AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum] - 1];
 		}
 
 		#endregion
@@ -118,17 +145,24 @@ namespace DeskSpace
 		/// Move a card to sorted card, return false if this card violate game rule.
 		/// </summary>
 		/// <param name="card"></param>
+		/// <param name="change"></param>
 		/// <returns></returns>
-		public bool AddNewCardInSortedCard(Card card)
+		public bool AddNewCardInSortedCard(Card card, bool change = false)
 		{
 			if (card.CardNumber == Card.Number.Arch)
 			{
-				AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+				if (change)
+				{
+					AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+				}
 				return true;
 			}
 			else if (AllCardOnDesk.SortedCard[(int)card.CardType - 1].CardNumber == card.CardNumber-1)
 			{
-				AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+				if (change)
+				{
+					AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+				}
 				return true;
 			}
 			return false;
@@ -154,9 +188,9 @@ namespace DeskSpace
 			return false;
 		}
 
-		public Card GetCardInfo(int loc)
+		public Card GetCardInfoFreeCard(int loc)
 		{
-			return AllCardOnDesk.FreeCard[loc];
+			return AllCardOnDesk.FreeCard[loc];	
 		}
 
 		public Card RemoveCardInFreeCard(int loc)
@@ -177,6 +211,7 @@ namespace DeskSpace
 					if (AllCardOnDesk.ColoumCard[coloumIndex,i] != null)
 					{
 						_coloumCardCounter[coloumIndex]++;
+						_allCardCount++;
 					}
 				}
 			}
@@ -186,8 +221,25 @@ namespace DeskSpace
 				if (AllCardOnDesk.FreeCard[i] != null)
 				{
 					_freeCardCounter++;
+					_allCardCount++;
 				}
 			}
+		}
+
+		public bool IsSolved()
+		{
+			for (int i = 0; i < AllCardOnDesk.SortedCard.Length; i++)
+			{
+				if (AllCardOnDesk.SortedCard[i] == null)
+				{
+					return false;
+				}
+				if (AllCardOnDesk.SortedCard[i].CardNumber != Card.Number.King)
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 
 		/// <summary>
@@ -297,6 +349,7 @@ namespace DeskSpace
 
 		public int CheckSortedInColoum(int coloum)
 		{
+			//TODO
 			return 0;
 		}
 
@@ -526,7 +579,7 @@ namespace DeskSpace
 			{
 				return false;
 			}
-			return (argCard1.CardType == argCard2.CardType || argCard1.CardNumber == argCard2.CardNumber);
+			return (argCard1.CardType == argCard2.CardType && argCard1.CardNumber == argCard2.CardNumber);
 		}
 
 		public string Pretty()

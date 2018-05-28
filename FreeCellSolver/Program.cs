@@ -10,6 +10,7 @@ namespace FreeCellSolver
 {
 	class Program
 	{
+		
 		static void Main(string[] args)
 		{
 			CommandManager.GetInstance().ExecuteCommand("h");
@@ -24,5 +25,26 @@ namespace FreeCellSolver
 				}
 			}
 		}
+		
+
+		/*
+		static void Main(string[] args)
+		{
+			Desk tempDesk1 = new Desk();
+			for (int coloumIndex = 0; coloumIndex < 4; coloumIndex++)
+			{
+				for (Card.Number i = Card.Number.King; i >= Card.Number.Arch; i--)
+				{
+					tempDesk1.AddNewCardInColoum(coloumIndex, new Card((Card.Type)coloumIndex + 1, i));
+				}
+			}
+			string json = tempDesk1.GetJson();
+			using (var fs = File.Create(Environment.CurrentDirectory + Path.DirectorySeparatorChar + "test.json"))
+			{
+				byte[] byteArray = Encoding.Default.GetBytes(json);
+				fs.Write(byteArray, 0, byteArray.Length);
+			}
+		}
+		*/
 	}
 }

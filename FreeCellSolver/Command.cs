@@ -233,7 +233,14 @@ namespace FreeCellSolver
 				return;
 			}
 
-			// TODO Add solve desk
+			InferManager.GetInstance().ClearInferData();
+			InferManager.GetInstance().SetStartDesk(targetDesk);
+			var result = InferManager.GetInstance().StartInfer();
+			Console.WriteLine(result.Message);
+			foreach (var singleProcedure in result.Procedures)
+			{
+				Console.WriteLine(singleProcedure.MoveMessage);
+			}
 		}
 	}
 

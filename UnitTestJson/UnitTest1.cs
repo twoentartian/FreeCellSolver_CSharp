@@ -247,10 +247,80 @@ namespace UnitTestJson
 			}
 			for (Card.Number i = Card.Number.Arch; i <= Card.Number.King; i++)
 			{
-				tempDesk2.AddNewCardInSortedCard(new Card(Card.Type.Club, i));
+				tempDesk2.AddNewCardInSortedCard(new Card(Card.Type.Club, i), true);
 			}
 
 			tempDesk2.CheckError();
+		}
+
+		[TestMethod]
+		public void TestDeepClone()
+		{
+			Desk tempDesk1 = new Desk();
+			Desk tempDesk2 = tempDesk1.DeepClone();
+			tempDesk2.AllCardOnDesk.FreeCard[0] = new Card(Card.Type.Club, Card.Number.Arch);
+
+			if (Card.CheckSame(tempDesk1.AllCardOnDesk.FreeCard[0], tempDesk2.AllCardOnDesk.FreeCard[0]))
+			{
+				throw new Exception("Test Failed");
+			}
+
+		}
+
+		[TestMethod]
+		public void TestInfer()
+		{
+			Desk tempDesk1 = new Desk();
+			for (int coloumIndex = 0; coloumIndex < 4; coloumIndex++)
+			{
+				for (Card.Number i = Card.Number.King; i >= Card.Number.Arch; i--)
+				{
+					tempDesk1.AddNewCardInColoum(coloumIndex, new Card((Card.Type) coloumIndex + 1, i));
+				}
+			}
+
+			InferManager.GetInstance().ClearInferData();
+			InferManager.GetInstance().SetStartDesk(tempDesk1);
+			var result = InferManager.GetInstance().StartInfer();
+			if (!result.IsSolved)
+			{
+				throw new Exception(result.Message);
+			}
+
+		}
+
+		[TestMethod]
+		public void SpecialTest()
+		{
+			Desk tempDesk1 = new Desk();
+			tempDesk1.AllCardOnDesk.SortedCard[0] = new Card(Card.Type.Diamonds, Card.Number.King);
+			tempDesk1.AllCardOnDesk.SortedCard[1] = new Card(Card.Type.Heart, Card.Number.Queen);
+			tempDesk1.AllCardOnDesk.SortedCard[2] = new Card(Card.Type.Spade, Card.Number.Jack);
+			tempDesk1.AllCardOnDesk.SortedCard[3] = new Card(Card.Type.Club, Card.Number.Ten);
+
+			tempDesk1.AddNewCardInColoum(1, new Card(Card.Type.Heart, Card.Number.King));
+			tempDesk1.AddNewCardInColoum(2, new Card(Card.Type.Spade, Card.Number.King));
+			tempDesk1.AddNewCardInColoum(3, new Card(Card.Type.Club, Card.Number.King));
+			tempDesk1.AddNewCardInColoum(2, new Card(Card.Type.Spade, Card.Number.Queen));
+			tempDesk1.AddNewCardInColoum(3, new Card(Card.Type.Club, Card.Number.Queen));
+			tempDesk1.AddNewCardInColoum(3, new Card(Card.Type.Club, Card.Number.Jack));
+
+
+			InferManager.GetInstance().ClearInferData();
+			InferManager.GetInstance().SetStartDesk(tempDesk1);
+			var result = InferManager.GetInstance().StartInfer();
+			if (!result.IsSolved)
+			{
+				throw new Exception(result.Message);
+			}
+
+			InferManager.GetInstance().ClearInferData();
+			InferManager.GetInstance().SetStartDesk(tempDesk1);
+			result = InferManager.GetInstance().StartInfer(4);
+			if (result.IsSolved)
+			{
+				throw new Exception(result.Message);
+			}
 		}
 	}
 }
