@@ -51,135 +51,74 @@ namespace DeskSpace
 
 		public void SetStartDesk(Desk desk)
 		{
-			InferResult startInferResult = new InferResult(desk);
-			startInferResult.Id = InferResultMapId;
+			InferResult startInferResult = new InferResult(desk) {Id = InferResultMapId};
 			InferResults.Add(startInferResult);
 		}
 
-		public LogicFlowChart StartInfer(int layer = 0)
+		public LogicFlowChart StartInfer()
 		{
-			LogicFlowChart outputFlowChart;
-			if (layer == 0)
+			while (true)
 			{
-				while (true)
+				InferResults.Sort();
+				int index = 0;
+				while (InferResults[index].IsInferred)
 				{
-					InferResults.Sort();
-					int index = 0;
-					while (InferResults[index].IsInferred)
+					index++;
+					if (index == InferResults.Count)
 					{
-						index++;
-						if (index == InferResults.Count)
-						{
-							outputFlowChart = new LogicFlowChart(false, $"Cannot solve in {LastInferLayer} layers");
-							return outputFlowChart;
-						}
+						LogicFlowChart outputFlowChart = new LogicFlowChart(false, $"Cannot solve in {LastInferLayer} layers");
+						return outputFlowChart;
 					}
-					List<InferResult> results = InferResults[index].Infer();
-					foreach (InferResult result in results)
+				}
+				List<InferResult> results = InferResults[index].Infer();
+				foreach (InferResult result in results)
+				{
+					if (result.CurrentDesk.IsSolved())
 					{
-						if (result.CurrentDesk.IsSolved())
+						LogicFlowChart outputFlowChart = new LogicFlowChart(true, $"Solved in {LastInferLayer} layers");
+						InferResult tempInferResult = _lastInferResult;
+						while (true)
 						{
-							outputFlowChart = new LogicFlowChart(true, $"Solved in {LastInferLayer} layers");
-							InferResult tempInferResult = _lastInferResult;
-							while (true)
+							outputFlowChart.Procedures.Insert(0, tempInferResult);
+							if (tempInferResult.FromInferResultId == -1)
 							{
-								outputFlowChart.Procedures.Insert(0, tempInferResult);
-								if (tempInferResult.FromInferResultId == -1)
-								{
-									break;
-								}
-								else
-								{
-									InferResult parentResult = InferResults.Find(singleResult => singleResult.Id == tempInferResult.FromInferResultId);
-									tempInferResult = parentResult;
-								}
+								break;
 							}
-							
-							//TODO Assemble output flow chart
-							return outputFlowChart;
+							else
+							{
+								InferResult parentResult =
+									InferResults.Find(singleResult => singleResult.Id == tempInferResult.FromInferResultId);
+								tempInferResult = parentResult;
+							}
 						}
-						else
+						return outputFlowChart;
+					}
+					else
+					{
+						bool isSame = false;
+						foreach (var singleResult in InferResults)
 						{
-							bool isSame = false;
-							foreach (var singleResult in InferResults)
-							{
-								if (result.InferLayer - singleResult.InferLayer > 8)
-								{
-									continue;
-								}
-								if (result.CurrentDesk.CheckSame(singleResult.CurrentDesk))
-								{
-									isSame = true;
-									break;
-								}
-							}
-							if (isSame)
+							if (result.InferLayer - singleResult.InferLayer > 8)
 							{
 								continue;
 							}
-							_lastInferResult = result;
-							_lastInferLayer = result.InferLayer;
-							result.Id = InferResultMapId;
-							InferResults.Add(result);
+							if (result.CurrentDesk.CheckSame(singleResult.CurrentDesk))
+							{
+								isSame = true;
+								break;
+							}
 						}
+						if (isSame)
+						{
+							continue;
+						}
+						_lastInferResult = result;
+						_lastInferLayer = result.InferLayer;
+						result.Id = InferResultMapId;
+						InferResults.Add(result);
 					}
 				}
 			}
-			else
-			{
-				for (int i = 0; i < layer; i++)
-				{
-					InferResults.Sort();
-					int index = 0;
-					while (InferResults[index].IsInferred)
-					{
-						index++;
-						if (index == InferResults.Count)
-						{
-							outputFlowChart = new LogicFlowChart(false, $"Cannot solve in {LastInferLayer} layers");
-							return outputFlowChart;
-						}
-					}
-					List<InferResult> results = InferResults[index].Infer();
-					foreach (InferResult result in results)
-					{
-						if (result.CurrentDesk.IsSolved())
-						{
-							outputFlowChart = new LogicFlowChart(true, $"Solved in {LastInferLayer} layers");
-							//TODO Assemble output flow chart
-							return outputFlowChart;
-						}
-						else
-						{
-							bool isSame = false;
-							foreach (var singleResult in InferResults)
-							{
-								if (result.InferLayer - singleResult.InferLayer > 8)
-								{
-									continue;
-								}
-								if (result.CurrentDesk.CheckSame(singleResult.CurrentDesk))
-								{
-									isSame = true;
-									break;
-								}
-							}
-							if (isSame)
-							{
-								continue;
-							}
-							_lastInferResult = result;
-							_lastInferLayer = result.InferLayer;
-							result.Id = InferResultMapId;
-							InferResults.Add(result);
-						}
-					}
-				}
-				outputFlowChart = new LogicFlowChart(false, $"Cannot solve in {layer} layers");
-				return outputFlowChart;
-			}
-
-			
 		}
 	}
 
@@ -240,24 +179,50 @@ namespace DeskSpace
 			int nextInferLayer = InferLayer + 1;
 			_isInferred = true;
 
-			//Check is there any cards to move to sorted card.
+			//Check is there any coloum cards to move to sorted card.
 			for (int i = 0; i < CurrentDesk.AllCardOnDesk.ColoumCard.GetLength(0); i++)
 			{
-				Card tempcard = CurrentDesk.GetTheLastCardInfoInColoum(i);
-				if (tempcard == null)
+				Card tempCard = CurrentDesk.GetLastCardInfoInColoum(i);
+				if (tempCard == null)
 				{
 					continue;
 				}
-				if (CurrentDesk.AddNewCardInSortedCard(tempcard))
+				if (CurrentDesk.AddNewCardInSortedCard(tempCard))
 				{
 					Desk copyedDesk = CurrentDesk.DeepClone();
-					copyedDesk.AddNewCardInSortedCard(tempcard, true);
-					copyedDesk.RemoveCardInColoum(i);
+					copyedDesk.AddNewCardInSortedCard(tempCard, true);
+					copyedDesk.RemoveLastCardInColoum(i);
 					float winPercent = copyedDesk.CalculateWinPercent();
-					outputResults.Add(new InferResult(copyedDesk, nextInferLayer, winPercent, $"Move {tempcard.Pretty()} to sorted card", Id));
+					outputResults.Add(new InferResult(copyedDesk, nextInferLayer, winPercent, $"Move {tempCard.Pretty()} to sorted card", Id));
 				}
 			}
 
+			//Check is there any free cards to move to sorted card.
+			for (int i = 0; i < CurrentDesk.AllCardOnDesk.FreeCard.Length; i++)
+			{
+				Card tempCard = CurrentDesk.GetCardInfoFreeCard(i);
+				if (tempCard == null)
+				{
+					continue;
+				}
+				if (CurrentDesk.AddNewCardInSortedCard(tempCard))
+				{
+					Desk copyedDesk = CurrentDesk.DeepClone();
+					copyedDesk.AddNewCardInSortedCard(tempCard, true);
+					copyedDesk.RemoveCardInFreeCard(i);
+					float winPercent = copyedDesk.CalculateWinPercent();
+					outputResults.Add(new InferResult(copyedDesk, nextInferLayer, winPercent, $"Move {tempCard.Pretty()} to sorted card", Id));
+				}
+			}
+
+			//Check is there any cards which can be moved to another coloum
+			//TODO
+
+
+			//Randomly move a card to free card
+			//TODO
+
+			//
 
 			return outputResults;
 		}

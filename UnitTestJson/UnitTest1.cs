@@ -181,11 +181,11 @@ namespace UnitTestJson
 				throw new Exception("Test failed");
 			}
 
-			Card card = tempDesk1.RemoveCardInColoum(0);
+			Card card = tempDesk1.RemoveLastCardInColoum(0);
 
 			try
 			{
-				tempDesk1.RemoveCardInColoum(0);
+				tempDesk1.RemoveLastCardInColoum(0);
 				throw new Exception("Test Failed");
 			}
 			catch (NotEnoughCardException)
@@ -218,7 +218,7 @@ namespace UnitTestJson
 			}
 			tempDesk1.CheckError();
 
-			Card tempCard = tempDesk1.RemoveCardInColoum(0);
+			Card tempCard = tempDesk1.RemoveLastCardInColoum(0);
 			try
 			{
 				tempDesk1.CheckError();
@@ -268,7 +268,7 @@ namespace UnitTestJson
 		}
 
 		[TestMethod]
-		public void TestInfer()
+		public void TestInfer_SolveColoumCardDesk()
 		{
 			Desk tempDesk1 = new Desk();
 			for (int coloumIndex = 0; coloumIndex < 4; coloumIndex++)
@@ -290,7 +290,7 @@ namespace UnitTestJson
 		}
 
 		[TestMethod]
-		public void SpecialTest()
+		public void TestInfer_SolveColoumCardDesk_Sub()
 		{
 			Desk tempDesk1 = new Desk();
 			tempDesk1.AllCardOnDesk.SortedCard[0] = new Card(Card.Type.Diamonds, Card.Number.King);
@@ -313,14 +313,55 @@ namespace UnitTestJson
 			{
 				throw new Exception(result.Message);
 			}
+		}
+
+		[TestMethod]
+		public void TestInfer_SolveFreeCardDesk()
+		{
+			Desk tempDesk1 = new Desk();
+			for (int i = 0; i < tempDesk1.AllCardOnDesk.FreeCard.Length; i++)
+			{
+				tempDesk1.AddNewCardInFreeCard(new Card(Card.Type.Diamonds, Card.Number.King - i));
+			}
+			tempDesk1.AllCardOnDesk.SortedCard[(int) Card.Type.Diamonds - 1] = new Card(Card.Type.Diamonds,Card.Number.King - tempDesk1.AllCardOnDesk.FreeCard.Length);
+			tempDesk1.AllCardOnDesk.SortedCard[(int)Card.Type.Club - 1] = new Card(Card.Type.Club, Card.Number.King);
+			tempDesk1.AllCardOnDesk.SortedCard[(int)Card.Type.Heart - 1] = new Card(Card.Type.Heart, Card.Number.King);
+			tempDesk1.AllCardOnDesk.SortedCard[(int)Card.Type.Spade - 1] = new Card(Card.Type.Spade, Card.Number.King);
 
 			InferManager.GetInstance().ClearInferData();
 			InferManager.GetInstance().SetStartDesk(tempDesk1);
-			result = InferManager.GetInstance().StartInfer(4);
-			if (result.IsSolved)
+			var result = InferManager.GetInstance().StartInfer();
+			if (!result.IsSolved)
 			{
 				throw new Exception(result.Message);
 			}
+		}
+
+		[TestMethod]
+		public void TestCountSortedCardInColoum()
+		{
+			Desk tempDesk1 = new Desk();
+			bool sign = true;
+			for (Card.Number i = Card.Number.King; i >= Card.Number.Arch; i--)
+			{
+				tempDesk1.AddNewCardInColoum(0, new Card(sign ? Card.Type.Diamonds : Card.Type.Spade, i));
+				sign = !sign;
+			}
+			sign = false;
+			for (Card.Number i = Card.Number.King; i >= Card.Number.Arch; i--)
+			{
+				tempDesk1.AddNewCardInColoum(1, new Card(sign ? Card.Type.Diamonds : Card.Type.Spade, i));
+				sign = !sign;
+			}
+
+			for (int coloumIndex = 0; coloumIndex < 2; coloumIndex++)
+			{
+				if (tempDesk1.GetSortedCardCountInColoum(coloumIndex) != 12)
+				{
+					throw new Exception("Test Failed");
+				}
+			}
+				
 		}
 	}
 }

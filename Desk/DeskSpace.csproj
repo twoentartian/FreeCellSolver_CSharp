@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config.cs" />
     <Compile Include="DeskSpace.cs" />
     <Compile Include="Infer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

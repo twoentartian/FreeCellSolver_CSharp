@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -47,16 +48,48 @@ namespace DeskSpace
 
 		public DeskCard AllCardOnDesk = new DeskCard();
 
-		private readonly int[] _coloumCardCounter = new int[8];
+		private readonly int[] _coloumCardCounter = new int[Config.NumberOfColoum];
+
+		private readonly int[] _coloumCardSortedCardCounter = new int[Config.NumberOfColoum];
 
 		private int _allCardCount;
 		public int AllCardCount => _allCardCount;
 
 		#endregion
 
+		#region JSON
+
 		public string GetJson()
 		{
 			return JsonConvert.SerializeObject(AllCardOnDesk, Formatting.Indented);
+		}
+
+		/// <summary>
+		/// Count card in each position, this function is only applied when invoking GetDeskFromJson().
+		/// </summary>
+		private void CalculateParameters()
+		{
+			for (int coloumIndex = 0; coloumIndex < AllCardOnDesk.ColoumCard.GetLength(0); coloumIndex++)
+			{
+				for (int i = 0; i < AllCardOnDesk.ColoumCard.GetLength(1); i++)
+				{
+					if (AllCardOnDesk.ColoumCard[coloumIndex, i] != null)
+					{
+						_coloumCardCounter[coloumIndex]++;
+						_allCardCount++;
+					}
+				}
+			}
+
+			for (int i = 0; i < AllCardOnDesk.FreeCard.Length; i++)
+			{
+				if (AllCardOnDesk.FreeCard[i] != null)
+				{
+					_allCardCount++;
+				}
+			}
+
+			CheckSortedCardInColoum();
 		}
 
 		public static Desk GetDeskFromJson(string json)
@@ -67,10 +100,12 @@ namespace DeskSpace
 				MissingMemberHandling = MissingMemberHandling.Error
 			};
 			DeskCard outputDeskCard = JsonConvert.DeserializeObject<DeskCard>(json, jsonSetting);
-			Desk outputDesk = new Desk {AllCardOnDesk = outputDeskCard};
+			Desk outputDesk = new Desk { AllCardOnDesk = outputDeskCard };
 			outputDesk.CalculateParameters();
 			return outputDesk;
 		}
+
+		#endregion
 
 		public bool CheckSame(Desk argDesk) => CheckSame(this, argDesk);
 
@@ -86,22 +121,71 @@ namespace DeskSpace
 
 		public float CalculateWinPercent()
 		{
-			return 1 - (float)_allCardCount / (4 * 13);
+			return 1 - (float) _allCardCount / (4 * 13) + (float) _coloumCardSortedCardCounter.Sum() / (4 * 13 * 2);
 		}
 
 		#region Coloum operation
 
+		/// <summary>
+		/// Check sorted card in single coloum
+		/// </summary>
+		/// <param name="coloum"></param>
+		private void CheckSortedCardInColoum(int coloum)
+		{
+			Card card = GetLastCardInfoInColoum(coloum);
+			_coloumCardSortedCardCounter[coloum] = 0;
+			if (card== null)
+			{
+				return;
+			}
+			else
+			{
+				Card prevCard = AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum] - 1];
+				for (int i = _coloumCardCounter[coloum] - 2; i >= 0; i--)
+				{
+					if (AllCardOnDesk.ColoumCard[coloum, i].CardColor() == Card.Color.Unknown || AllCardOnDesk.ColoumCard[coloum, i].CardNumber == Card.Number.Unknown)
+					{
+						throw new Exception("Impossible situation");
+					}
+					if (prevCard.CardColor() == Card.Color.Unknown || prevCard.CardNumber == Card.Number.Unknown)
+					{
+						throw new Exception("Impossible situation");
+					}
+
+					if (AllCardOnDesk.ColoumCard[coloum, i].CardColor() != prevCard.CardColor() && AllCardOnDesk.ColoumCard[coloum, i].CardNumber == prevCard.CardNumber + 1)
+					{
+						_coloumCardSortedCardCounter[coloum]++;
+					}
+					else
+					{
+						break;
+					}
+
+					prevCard = AllCardOnDesk.ColoumCard[coloum, i];
+				}
+			}
+		}
+
+		/// <summary>
+		/// Check sorted card in all coloums
+		/// </summary>
+		private void CheckSortedCardInColoum()
+		{
+			for (int i = 0; i < Config.NumberOfColoum; i++)
+			{
+				CheckSortedCardInColoum(i);
+			}
+		}
+
 		public void AddNewCardInColoum(int coloum, Card.Type type, int numberInt)
 		{
 			Card.Number number = (Card.Number)numberInt;
-			AddNewCardInColoum(coloum, type, number);
+			AddNewCardInColoum(coloum, new Card(type, number));
 		}
 
 		public void AddNewCardInColoum(int coloum, Card.Type type, Card.Number number)
 		{
-			AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum]] = new Card(type, number);
-			_coloumCardCounter[coloum]++;
-			_allCardCount++;
+			AddNewCardInColoum(coloum, new Card(type, number));
 		}
 
 		public void AddNewCardInColoum(int coloum, Card card)
@@ -109,9 +193,10 @@ namespace DeskSpace
 			AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum]] = card;
 			_coloumCardCounter[coloum]++;
 			_allCardCount++;
+			CheckSortedCardInColoum(coloum);
 		}
 
-		public Card RemoveCardInColoum(int coloum)
+		public Card RemoveLastCardInColoum(int coloum)
 		{
 			Card outputCard;
 			if (_coloumCardCounter[coloum] > 0)
@@ -120,21 +205,27 @@ namespace DeskSpace
 				outputCard = AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum]];
 				AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum]] = null;
 				_allCardCount--;
+				CheckSortedCardInColoum(coloum);
 			}
 			else
 			{
-				throw new NotEnoughCardException("Not enought space in coloum, try increase the coloum size in source.");
+				throw new NotEnoughCardException("No card in the coloum");
 			}
 			return outputCard;
 		}
 
-		public Card GetTheLastCardInfoInColoum(int coloum)
+		public Card GetLastCardInfoInColoum(int coloum)
 		{
 			if (_coloumCardCounter[coloum]==0)
 			{
 				return null;
 			}
 			return AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum] - 1];
+		}
+
+		public int GetSortedCardCountInColoum(int coloum)
+		{
+			return _coloumCardSortedCardCounter[coloum];
 		}
 
 		#endregion
@@ -149,21 +240,35 @@ namespace DeskSpace
 		/// <returns></returns>
 		public bool AddNewCardInSortedCard(Card card, bool change = false)
 		{
-			if (card.CardNumber == Card.Number.Arch)
+			if (AllCardOnDesk.SortedCard[(int)card.CardType - 1] == null)
 			{
-				if (change)
+				if (card.CardNumber == Card.Number.Arch)
 				{
-					AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+					if (change)
+					{
+						AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+					}
+					return true;
 				}
-				return true;
+				else
+				{
+					return false;
+				}
 			}
-			else if (AllCardOnDesk.SortedCard[(int)card.CardType - 1].CardNumber == card.CardNumber-1)
+			else
 			{
-				if (change)
+				if (card.CardNumber == Card.Number.Arch)
 				{
-					AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+					throw new Exception("Impossible situation");
 				}
-				return true;
+				else if (AllCardOnDesk.SortedCard[(int)card.CardType - 1].CardNumber == card.CardNumber - 1)
+				{
+					if (change)
+					{
+						AllCardOnDesk.SortedCard[(int)card.CardType - 1] = card;
+					}
+					return true;
+				}
 			}
 			return false;
 		}
@@ -172,8 +277,6 @@ namespace DeskSpace
 
 		#region Free card operation
 
-		private int _freeCardCounter = 0;
-
 		public bool AddNewCardInFreeCard(Card card)
 		{
 			for (int i = 0; i < AllCardOnDesk.FreeCard.Length; i++)
@@ -181,7 +284,7 @@ namespace DeskSpace
 				if (AllCardOnDesk.FreeCard[i] == null)
 				{
 					AllCardOnDesk.FreeCard[i] = card;
-					_freeCardCounter++;
+					_allCardCount++;
 					return true;
 				}
 			}
@@ -197,35 +300,16 @@ namespace DeskSpace
 		{
 			Card output = AllCardOnDesk.FreeCard[loc];
 			AllCardOnDesk.FreeCard[loc] = null;
+			_allCardCount--;
 			return output;
 		}
 
 		#endregion
 
-		private void CalculateParameters()
-		{
-			for (int coloumIndex = 0; coloumIndex < AllCardOnDesk.ColoumCard.GetLength(0); coloumIndex++)
-			{
-				for (int i = 0; i < AllCardOnDesk.ColoumCard.GetLength(1); i++)
-				{
-					if (AllCardOnDesk.ColoumCard[coloumIndex,i] != null)
-					{
-						_coloumCardCounter[coloumIndex]++;
-						_allCardCount++;
-					}
-				}
-			}
-
-			for (int i = 0; i < AllCardOnDesk.FreeCard.Length; i++)
-			{
-				if (AllCardOnDesk.FreeCard[i] != null)
-				{
-					_freeCardCounter++;
-					_allCardCount++;
-				}
-			}
-		}
-
+		/// <summary>
+		/// Check whether the desk is solved.
+		/// </summary>
+		/// <returns></returns>
 		public bool IsSolved()
 		{
 			for (int i = 0; i < AllCardOnDesk.SortedCard.Length; i++)
@@ -316,11 +400,11 @@ namespace DeskSpace
 
 		#region Property
 
-		public Card[] FreeCard = new Card[4];
+		public Card[] FreeCard = new Card[Config.NumberOfFreeCardPosition];
 
 		public Card[] SortedCard = new Card[4];
 
-		public Card[,] ColoumCard = new Card[8, 26];
+		public Card[,] ColoumCard = new Card[Config.NumberOfColoum, 26];
 
 		#endregion
 
