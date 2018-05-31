@@ -92,6 +92,11 @@ namespace DeskSpace
 			CheckSortedCardInColoum();
 		}
 
+		/// <summary>
+		/// Generate a desk target from json file.
+		/// </summary>
+		/// <param name="json"></param>
+		/// <returns></returns>
 		public static Desk GetDeskFromJson(string json)
 		{
 			JsonSerializerSettings jsonSetting = new JsonSerializerSettings
@@ -107,21 +112,40 @@ namespace DeskSpace
 
 		#endregion
 
+		/// <summary>
+		/// Check whether two desks are same.
+		/// </summary>
+		/// <param name="argDesk"></param>
+		/// <returns></returns>
 		public bool CheckSame(Desk argDesk) => CheckSame(this, argDesk);
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="argDesk1"></param>
+		/// <param name="argDesk2"></param>
+		/// <returns></returns>
 		public static bool CheckSame(Desk argDesk1, Desk argDesk2)
 		{
 			return DeskCard.CheckSame(argDesk1.AllCardOnDesk, argDesk2.AllCardOnDesk);
 		}
 
+		/// <summary>
+		/// Draw the desk with a readable format.
+		/// </summary>
+		/// <returns></returns>
 		public string Pretty()
 		{
 			return AllCardOnDesk.Pretty();
 		}
 
+		/// <summary>
+		/// Calculate the percentage of winning.
+		/// </summary>
+		/// <returns></returns>
 		public float CalculateWinPercent()
 		{
-			return 1 - (float) _allCardCount / (4 * 13) + (float) _coloumCardSortedCardCounter.Sum() / (4 * 13 * 2);
+			return 1 - (float) _allCardCount / (4 * 13) + (float) _coloumCardSortedCardCounter.Sum() / (4 * 12 * 2);
 		}
 
 		#region Coloum operation
@@ -431,12 +455,6 @@ namespace DeskSpace
 			return (GetEmptyLocationOnColoumCard() + 1) * (GetEmptyLocationOnFreeCard() + 1);
 		}
 
-		public int CheckSortedInColoum(int coloum)
-		{
-			//TODO
-			return 0;
-		}
-
 		public bool CheckSame(DeskCard argDeskCard) => CheckSame(this, argDeskCard);
 
 		public static bool CheckSame(DeskCard argDeskCard1, DeskCard argDeskCard2)
@@ -553,7 +571,7 @@ namespace DeskSpace
 	}
 
 	[Serializable]
-	public class Card
+	public class Card : ICloneable
 	{
 		public Card()
 		{
@@ -565,6 +583,11 @@ namespace DeskSpace
 		{
 			CardNumber = argNumber;
 			CardType = argType;
+		}
+
+		public object Clone()
+		{
+			return new Card(CardType, CardNumber);
 		}
 
 		#region Property

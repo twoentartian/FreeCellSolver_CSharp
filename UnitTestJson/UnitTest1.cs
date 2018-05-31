@@ -353,6 +353,18 @@ namespace UnitTestJson
 				tempDesk1.AddNewCardInColoum(1, new Card(sign ? Card.Type.Diamonds : Card.Type.Spade, i));
 				sign = !sign;
 			}
+			sign = true;
+			for (Card.Number i = Card.Number.King; i >= Card.Number.Arch; i--)
+			{
+				tempDesk1.AddNewCardInColoum(2, new Card(sign ? Card.Type.Heart : Card.Type.Club, i));
+				sign = !sign;
+			}
+			sign = false;
+			for (Card.Number i = Card.Number.King; i >= Card.Number.Arch; i--)
+			{
+				tempDesk1.AddNewCardInColoum(3, new Card(sign ? Card.Type.Heart : Card.Type.Club, i));
+				sign = !sign;
+			}
 
 			for (int coloumIndex = 0; coloumIndex < 2; coloumIndex++)
 			{
@@ -361,7 +373,6 @@ namespace UnitTestJson
 					throw new Exception("Test Failed");
 				}
 			}
-				
 		}
 	}
 }
