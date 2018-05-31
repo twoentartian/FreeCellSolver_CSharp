@@ -219,7 +219,7 @@ namespace DeskSpace
 			CheckSortedCardInColoum(coloum);
 		}
 
-		public bool MoveCardToColoum(int sourceCardColoum, int sourceSortedCardCount, int targetColoum)
+		public bool MoveCardFromColoumToColoum(int sourceCardColoum, int sourceSortedCardCount, int targetColoum)
 		{
 			if (sourceSortedCardCount > AllCardOnDesk.GetMaximumMovementNumber())
 			{
@@ -232,56 +232,46 @@ namespace DeskSpace
 
 			Card sourceCard = AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - sourceSortedCardCount - 1];
 			Card lastCard = GetLastCardInfoInColoum(targetColoum);
-			if (lastCard == null)
+			if (Card.CanMove(lastCard, sourceCard))
 			{
 				for (int i = 0; i <= sourceSortedCardCount; i++)
 				{
 					//Add card in target coloum
-					AllCardOnDesk.ColoumCard[targetColoum, _coloumCardCounter[targetColoum] + i] = AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - i - 1];
-					_coloumCardCounter[targetColoum]++;
+					AllCardOnDesk.ColoumCard[targetColoum, _coloumCardCounter[targetColoum] + sourceSortedCardCount - i] =
+						AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - i - 1];
 
 					//Remove card in source coloum
 					AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - i - 1] = null;
-					_coloumCardCounter[sourceCardColoum]--;
 				}
+
+				_coloumCardCounter[targetColoum] = _coloumCardCounter[targetColoum] + sourceSortedCardCount + 1;
+				_coloumCardCounter[sourceCardColoum] = _coloumCardCounter[sourceCardColoum] - sourceSortedCardCount - 1;
+
 				CheckSortedCardInColoum(sourceCardColoum);
 				CheckSortedCardInColoum(targetColoum);
 				return true;
 			}
 			else
 			{
-				if (lastCard.CardNumber == Card.Number.Unknown || sourceCard.CardNumber == Card.Number.Unknown)
-				{
-					throw new Exception("Logic error: unknow card number");
-				}
-				if (lastCard.CardColor() == Card.Color.Unknown || sourceCard.CardColor() == Card.Color.Unknown)
-				{
-					throw new Exception("Logic error: unknow card color");
-				}
-				if (lastCard.CardColor() != sourceCard.CardColor() && lastCard.CardNumber - 1 == sourceCard.CardNumber)
-				{
-					for (int i = 0; i <= sourceSortedCardCount; i++)
-					{
-						//Add card in target coloum
-						AllCardOnDesk.ColoumCard[targetColoum, _coloumCardCounter[targetColoum] + i] = AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - i];
-						_coloumCardCounter[targetColoum]++;
-						_allCardCount++;
-
-						//Remove card in source coloum
-						AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - i] = null;
-						_coloumCardCounter[sourceCardColoum]--;
-						_allCardCount--;
-					}
-					CheckSortedCardInColoum(sourceCardColoum);
-					CheckSortedCardInColoum(targetColoum);
-					return true;
-				}
-				else
-				{
-					return false;
-				}
+				return false;
 			}
-			
+
+		}
+
+		public bool MoveCardFromFreeToColoum(int coloum, Card card)
+		{
+			Card lastCard = GetLastCardInfoInColoum(coloum);
+			if (Card.CanMove(lastCard, card))
+			{
+				AddNewCardInColoum(coloum, card);
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+
+			;
 		}
 
 		public Card RemoveLastCardInColoum(int coloum)
@@ -828,6 +818,30 @@ namespace DeskSpace
 		public int GetId()
 		{
 			return (int)CardNumber - 1 + 13 * ((int) CardType - 1);
+		}
+
+		public static bool CanMove(Card parentCard, Card moveCard)
+		{
+			if (parentCard == null)
+			{
+				return true;
+			}
+			if (parentCard.CardNumber == Card.Number.Unknown || moveCard.CardNumber == Card.Number.Unknown)
+			{
+				throw new Exception("Logic error: unknow card number");
+			}
+			if (parentCard.CardColor() == Card.Color.Unknown || moveCard.CardColor() == Card.Color.Unknown)
+			{
+				throw new Exception("Logic error: unknow card color");
+			}
+			if (parentCard.CardColor() != moveCard.CardColor() && parentCard.CardNumber - 1 == moveCard.CardNumber)
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
 		}
 	}
 }

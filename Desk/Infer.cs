@@ -57,6 +57,7 @@ namespace DeskSpace
 
 		public LogicFlowChart StartInfer()
 		{
+			int inferCounter = 0;
 			while (true)
 			{
 				InferResults.Sort();
@@ -66,15 +67,22 @@ namespace DeskSpace
 					index++;
 					if (index == InferResults.Count)
 					{
+						Console.WriteLine();
 						LogicFlowChart outputFlowChart = new LogicFlowChart(false, $"Cannot solve in {LastInferLayer} layers");
 						return outputFlowChart;
 					}
 				}
+
+				Console.Write("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b                    ");
+				Console.Write($"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b {InferResults[index].WinPercent:F4} {inferCounter}:{InferResults.Count}");
+
 				List<InferResult> results = InferResults[index].Infer();
+				inferCounter++;
 				foreach (InferResult result in results)
 				{
 					if (result.CurrentDesk.IsSolved())
 					{
+						Console.WriteLine();
 						LogicFlowChart outputFlowChart = new LogicFlowChart(true, $"Solved in {LastInferLayer} layers");
 						InferResult tempInferResult = _lastInferResult;
 						while (true)
@@ -98,10 +106,6 @@ namespace DeskSpace
 						bool isSame = false;
 						foreach (var singleResult in InferResults)
 						{
-							if (result.InferLayer - singleResult.InferLayer > 8)
-							{
-								continue;
-							}
 							if (result.CurrentDesk.CheckSame(singleResult.CurrentDesk))
 							{
 								isSame = true;
@@ -180,7 +184,7 @@ namespace DeskSpace
 			_isInferred = true;
 
 			Desk copyedDesk;
-
+			bool IsMoveToSortedCard = false;
 			//Check is there any coloum cards to move to sorted card.
 			for (int i = 0; i < CurrentDesk.AllCardOnDesk.ColoumCard.GetLength(0); i++)
 			{
@@ -196,7 +200,12 @@ namespace DeskSpace
 					copyedDesk.RemoveLastCardInColoum(i);
 					float winPercent = copyedDesk.CalculateWinPercent();
 					outputResults.Add(new InferResult(copyedDesk, nextInferLayer, winPercent, $"Move {tempCard.Pretty()} to sorted card", Id));
+					IsMoveToSortedCard = true;
 				}
+			}
+			if (IsMoveToSortedCard)
+			{
+				return outputResults;
 			}
 
 			//Check is there any free cards to move to sorted card.
@@ -214,6 +223,35 @@ namespace DeskSpace
 					copyedDesk.RemoveCardInFreeCard(i);
 					float winPercent = copyedDesk.CalculateWinPercent();
 					outputResults.Add(new InferResult(copyedDesk, nextInferLayer, winPercent, $"Move {tempCard.Pretty()} to sorted card", Id));
+					IsMoveToSortedCard = true;
+				}
+			}
+
+			//Return if any cards moved to sorted card
+			if (IsMoveToSortedCard)
+			{
+				return outputResults;
+			}
+
+			//Check is there any free cards to move to a coloum card.
+			copyedDesk = CurrentDesk.DeepClone();
+			for (int i = 0; i < CurrentDesk.AllCardOnDesk.FreeCard.Length; i++)
+			{
+				Card tempCard = CurrentDesk.GetCardInfoFreeCard(i);
+				if (tempCard == null)
+				{
+					continue;
+				}
+
+				for (int coloum = 0; coloum < Config.NumberOfColoum; coloum++)
+				{
+					if (copyedDesk.MoveCardFromFreeToColoum(coloum,tempCard))
+					{
+						copyedDesk.RemoveCardInFreeCard(i);
+						float winPercent = copyedDesk.CalculateWinPercent();
+						outputResults.Add(new InferResult(copyedDesk, nextInferLayer, winPercent, $"Move {tempCard.Pretty()} to coloum {coloum}", Id));
+						copyedDesk = CurrentDesk.DeepClone();
+					}
 				}
 			}
 
@@ -232,7 +270,7 @@ namespace DeskSpace
 						if (sourceColoum != targetColoum)
 						{
 
-							if (copyedDesk.MoveCardToColoum(sourceColoum,sortedCardCounter,targetColoum))
+							if (copyedDesk.MoveCardFromColoumToColoum(sourceColoum,sortedCardCounter,targetColoum))
 							{
 								float winPercent = copyedDesk.CalculateWinPercent();
 								outputResults.Add(new InferResult(copyedDesk, nextInferLayer, winPercent,
@@ -245,12 +283,25 @@ namespace DeskSpace
 				}
 			}
 
-
-
 			//Randomly move a card to free card
-			//TODO
-
-			//
+			copyedDesk = CurrentDesk.DeepClone();
+			for (int freeLoc = 0; freeLoc < Config.NumberOfFreeCardPosition; freeLoc++)
+			{
+				if (CurrentDesk.GetCardInfoFreeCard(freeLoc) == null)
+				{
+					for (int coloum = 0; coloum < Config.NumberOfColoum; coloum++)
+					{
+						if (CurrentDesk.GetLastCardInfoInColoum(coloum) != null)
+						{
+							Card movedCard = copyedDesk.RemoveLastCardInColoum(coloum);
+							copyedDesk.AddNewCardInFreeCard(movedCard);
+							float winPercent = copyedDesk.CalculateWinPercent();
+							outputResults.Add(new InferResult(copyedDesk, nextInferLayer, winPercent, $"Move {movedCard.Pretty()} to free card {freeLoc}", Id));
+							copyedDesk = CurrentDesk.DeepClone();
+						}
+					}
+				}
+			}
 
 			return outputResults;
 		}
@@ -273,7 +324,5 @@ namespace DeskSpace
 		private List<InferResult> _procedures = new List<InferResult>();
 		public List<InferResult> Procedures => _procedures;
 
-
-		//TODO: ADD logic flow
 	}
 }
