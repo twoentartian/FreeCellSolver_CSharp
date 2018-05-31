@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace UnitTestJson
 {
 	[TestClass]
-	public class UnitTest1
+	public class UnitTests
 	{
 		[TestMethod]
 		public void TestJson4Desk()
@@ -372,6 +372,28 @@ namespace UnitTestJson
 				{
 					throw new Exception("Test Failed");
 				}
+			}
+		}
+
+		[TestMethod]
+		public void TestInfer_SolveColoumCardViaMove()
+		{
+			Desk tempDesk1 = new Desk();
+			tempDesk1.AllCardOnDesk.SortedCard[0] = new Card(Card.Type.Diamonds, Card.Number.King);
+			tempDesk1.AllCardOnDesk.SortedCard[1] = new Card(Card.Type.Heart, Card.Number.King);
+			tempDesk1.AllCardOnDesk.SortedCard[2] = new Card(Card.Type.Spade, Card.Number.King);
+			tempDesk1.AllCardOnDesk.SortedCard[3] = new Card(Card.Type.Club, Card.Number.Ten);
+
+			tempDesk1.AddNewCardInColoum(0, new Card(Card.Type.Club, Card.Number.Jack));
+			tempDesk1.AddNewCardInColoum(0, new Card(Card.Type.Club, Card.Number.Queen));
+			tempDesk1.AddNewCardInColoum(0, new Card(Card.Type.Club, Card.Number.King));
+
+			InferManager.GetInstance().ClearInferData();
+			InferManager.GetInstance().SetStartDesk(tempDesk1);
+			var result = InferManager.GetInstance().StartInfer();
+			if (!result.IsSolved)
+			{
+				throw new Exception(result.Message);
 			}
 		}
 	}

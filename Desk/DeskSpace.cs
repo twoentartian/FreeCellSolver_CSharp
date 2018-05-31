@@ -2,7 +2,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -220,6 +219,71 @@ namespace DeskSpace
 			CheckSortedCardInColoum(coloum);
 		}
 
+		public bool MoveCardToColoum(int sourceCardColoum, int sourceSortedCardCount, int targetColoum)
+		{
+			if (sourceSortedCardCount > AllCardOnDesk.GetMaximumMovementNumber())
+			{
+				return false;
+			}
+			if (GetLastCardInfoInColoum(sourceCardColoum) == null)
+			{
+				return false;
+			}
+
+			Card sourceCard = AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - sourceSortedCardCount - 1];
+			Card lastCard = GetLastCardInfoInColoum(targetColoum);
+			if (lastCard == null)
+			{
+				for (int i = 0; i <= sourceSortedCardCount; i++)
+				{
+					//Add card in target coloum
+					AllCardOnDesk.ColoumCard[targetColoum, _coloumCardCounter[targetColoum] + i] = AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - i - 1];
+					_coloumCardCounter[targetColoum]++;
+
+					//Remove card in source coloum
+					AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - i - 1] = null;
+					_coloumCardCounter[sourceCardColoum]--;
+				}
+				CheckSortedCardInColoum(sourceCardColoum);
+				CheckSortedCardInColoum(targetColoum);
+				return true;
+			}
+			else
+			{
+				if (lastCard.CardNumber == Card.Number.Unknown || sourceCard.CardNumber == Card.Number.Unknown)
+				{
+					throw new Exception("Logic error: unknow card number");
+				}
+				if (lastCard.CardColor() == Card.Color.Unknown || sourceCard.CardColor() == Card.Color.Unknown)
+				{
+					throw new Exception("Logic error: unknow card color");
+				}
+				if (lastCard.CardColor() != sourceCard.CardColor() && lastCard.CardNumber - 1 == sourceCard.CardNumber)
+				{
+					for (int i = 0; i <= sourceSortedCardCount; i++)
+					{
+						//Add card in target coloum
+						AllCardOnDesk.ColoumCard[targetColoum, _coloumCardCounter[targetColoum] + i] = AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - i];
+						_coloumCardCounter[targetColoum]++;
+						_allCardCount++;
+
+						//Remove card in source coloum
+						AllCardOnDesk.ColoumCard[sourceCardColoum, _coloumCardCounter[sourceCardColoum] - i] = null;
+						_coloumCardCounter[sourceCardColoum]--;
+						_allCardCount--;
+					}
+					CheckSortedCardInColoum(sourceCardColoum);
+					CheckSortedCardInColoum(targetColoum);
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			
+		}
+
 		public Card RemoveLastCardInColoum(int coloum)
 		{
 			Card outputCard;
@@ -247,9 +311,19 @@ namespace DeskSpace
 			return AllCardOnDesk.ColoumCard[coloum, _coloumCardCounter[coloum] - 1];
 		}
 
+		public Card GetCardInfo(int coloum, int location)
+		{
+			return AllCardOnDesk.ColoumCard[coloum, location];
+		}
+
 		public int GetSortedCardCountInColoum(int coloum)
 		{
 			return _coloumCardSortedCardCounter[coloum];
+		}
+
+		public int GetCardCountInColoum(int coloum)
+		{
+			return _coloumCardCounter[coloum];
 		}
 
 		#endregion

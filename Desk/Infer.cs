@@ -34,7 +34,7 @@ namespace DeskSpace
 				_inferResultMapId++;
 				return _inferResultMapId-1;
 			}
-			set { _inferResultMapId = value; }
+			set => _inferResultMapId = value;
 		}
 
 		private int _lastInferLayer;
@@ -179,6 +179,8 @@ namespace DeskSpace
 			int nextInferLayer = InferLayer + 1;
 			_isInferred = true;
 
+			Desk copyedDesk;
+
 			//Check is there any coloum cards to move to sorted card.
 			for (int i = 0; i < CurrentDesk.AllCardOnDesk.ColoumCard.GetLength(0); i++)
 			{
@@ -189,7 +191,7 @@ namespace DeskSpace
 				}
 				if (CurrentDesk.AddNewCardInSortedCard(tempCard))
 				{
-					Desk copyedDesk = CurrentDesk.DeepClone();
+					copyedDesk = CurrentDesk.DeepClone();
 					copyedDesk.AddNewCardInSortedCard(tempCard, true);
 					copyedDesk.RemoveLastCardInColoum(i);
 					float winPercent = copyedDesk.CalculateWinPercent();
@@ -207,7 +209,7 @@ namespace DeskSpace
 				}
 				if (CurrentDesk.AddNewCardInSortedCard(tempCard))
 				{
-					Desk copyedDesk = CurrentDesk.DeepClone();
+					copyedDesk = CurrentDesk.DeepClone();
 					copyedDesk.AddNewCardInSortedCard(tempCard, true);
 					copyedDesk.RemoveCardInFreeCard(i);
 					float winPercent = copyedDesk.CalculateWinPercent();
@@ -216,7 +218,33 @@ namespace DeskSpace
 			}
 
 			//Check is there any cards which can be moved to another coloum
-			//TODO
+			copyedDesk = CurrentDesk.DeepClone();
+			for (int sourceColoum = 0; sourceColoum < Config.NumberOfColoum; sourceColoum++)
+			{
+				if (CurrentDesk.GetLastCardInfoInColoum(sourceColoum) == null)
+				{
+					continue;
+				}
+				for (int sortedCardCounter = 0; sortedCardCounter <= CurrentDesk.GetSortedCardCountInColoum(sourceColoum); sortedCardCounter++)
+				{
+					for (int targetColoum = 0; targetColoum < Config.NumberOfColoum; targetColoum++)
+					{
+						if (sourceColoum != targetColoum)
+						{
+
+							if (copyedDesk.MoveCardToColoum(sourceColoum,sortedCardCounter,targetColoum))
+							{
+								float winPercent = copyedDesk.CalculateWinPercent();
+								outputResults.Add(new InferResult(copyedDesk, nextInferLayer, winPercent,
+									$"Move {CurrentDesk.GetCardInfo(sourceColoum, CurrentDesk.GetCardCountInColoum(sourceColoum) - sortedCardCounter - 1).Pretty()} to coloum {targetColoum}",
+									Id));
+								copyedDesk = CurrentDesk.DeepClone();
+							}
+						}
+					}
+				}
+			}
+
 
 
 			//Randomly move a card to free card
